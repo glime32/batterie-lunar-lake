@@ -1,68 +1,50 @@
-# batterie-lunar-lake
+<p align="center"><img src="docs/banner-batterie-lunar-lake.png" alt="batterie-lunar-lake" width="100%"></p>
 
-Script de réglages batterie pour un portable Intel Lunar Lake (Core Ultra 200V) sous CachyOS + KDE Plasma 6, et une commande `conso` pour voir la consommation en direct.
+<p align="center"><img src="https://img.shields.io/badge/platform-CachyOS%20·%20KDE%20Plasma%206-000000?style=flat-square" alt="platform"> <img src="https://img.shields.io/badge/cpu-Intel%20Lunar%20Lake-0071c5?style=flat-square" alt="cpu"> <img src="https://img.shields.io/badge/shell-bash%20·%20fish-4eaa25?style=flat-square" alt="shell"> <img src="https://img.shields.io/badge/license-MIT-610089?style=flat-square" alt="license"></p>
 
-Je l'ai écrit parce que mon Yoga 7 2-in-1 (Core Ultra 7 258V) tenait nettement moins longtemps que sous Windows.
+<p align="center"><a href="README.fr.md">🇫🇷 Version française</a></p>
 
-## Le problème trouvé
+**Battery tweaks for Intel Lunar Lake laptops (Core Ultra 200V) on CachyOS + KDE Plasma**, a live `conso` power meter, and a one-click "conservation mode" button for Lenovo laptops.
 
-Sur les nouvelles installs, l'outil de détection matérielle de CachyOS (`chwd`) installe **intel-lpmd**. Sa config Lunar Lake (`intel_lpmd_config_F6_M189.xml`) le laisse actif même dans le profil *Économie d'énergie*, et il impose alors au CPU un EPP entre 64 et 192 selon la charge, alors que ce profil devrait mettre 255 (`power`, le plus économe). Résultat : en « économie d'énergie », le processeur se comporte presque comme en équilibré.
+My Yoga 7 2-in-1 (Core Ultra 7 258V) lasted noticeably less than on Windows. Here's what I found and fixed.
 
-Le script met `PowersaverDef` à `-1` : intel-lpmd ne fait plus rien en Économie d'énergie mais continue de travailler en Équilibré. L'ancienne config est sauvegardée à côté (`.avant-batterie`).
+## The problem
 
-## Ce que fait `batterie.sh`
+On new installs, CachyOS's hardware detection (`chwd`) installs **intel-lpmd**. Its Lunar Lake config (`intel_lpmd_config_F6_M189.xml`) keeps it active even in the *Power Saver* profile, where it forces the CPU EPP between 64 and 192 depending on load — instead of 255 (`power`, the most efficient). So in "power saver", the CPU behaves almost like balanced mode.
 
-1. corrige intel-lpmd (s'il est installé) ;
-2. profils automatiques dans PowerDevil : branché → Équilibré, sur batterie → Économie d'énergie ;
-3. `powertop --auto-tune` à chaque démarrage, sauf pour les souris/claviers USB (sinon ils laguent) ;
-4. synchronisation adaptative de l'écran sur *Automatique* (en *Toujours*, elle empêche le PSR) ;
-5. installe la fonction fish `conso` ;
-6. affiche un bilan : profil, EPP, intel-lpmd, PSR, économie Wi-Fi.
+`batterie.sh` sets `PowersaverDef` to `-1`: intel-lpmd stays out of Power Saver but keeps working in Balanced. The original config is backed up next to it.
 
-On peut le relancer sans risque, il saute ce qui est déjà fait. À relancer après une mise à jour d'intel-lpmd, qui peut remettre la config d'origine.
+<p align="center"><img src="docs/batterie-script.png" width="760" alt="batterie.sh"></p>
 
-## Utilisation
+## What `batterie.sh` does
+
+1. fixes intel-lpmd (if installed);
+2. automatic profiles in PowerDevil: plugged in → Balanced, on battery → Power Saver;
+3. `powertop --auto-tune` at every boot, except USB mice/keyboards (they would lag);
+4. adaptive sync set to *Automatic* (on *Always* it prevents PSR);
+5. installs the `conso` fish function;
+6. prints a summary: profile, EPP, intel-lpmd, PSR, Wi-Fi power save.
+
+Safe to run again; it skips what's already done.
 
 ```bash
 git clone https://github.com/glime32/batterie-lunar-lake
 cd batterie-lunar-lake
-bash batterie.sh      # sans sudo, il le demande lui-même
+bash batterie.sh     # no sudo, it asks when needed
 ```
 
-Puis, sur batterie :
+## `conso` — live battery draw
 
-```
-❯ conso
-Santé : 97 % (68,1 Wh sur 70,0 Wh)
-Mesure toutes les 2 s, Ctrl+C pour arrêter
+<p align="center"><img src="docs/conso.png" width="760" alt="conso"><br><sub>example output</sub></p>
 
-🔋 4,8 W  ·  moyenne 5,1 W  ·  reste ≈ 10 h 15  ·  CPU : power
-```
+Works with batteries exposing `power_now`/`energy_now` as well as `current_now`/`voltage_now`.
 
-`conso` gère les batteries qui exposent `power_now`/`energy_now` comme celles qui donnent `current_now`/`voltage_now`.
+## Conservation mode button (Lenovo)
 
-## Bouton « mode conservation »
-
-`mode-conservation.fish` ajoute dans la barre des tâches un bouton qui active ou coupe le mode conservation des portables Lenovo (la charge s'arrête vers 60 %, ce qui ménage la batterie quand le PC reste branché).
+`mode-conservation.fish` adds a taskbar button that toggles Lenovo's battery conservation mode (charging stops around 60 % to preserve the battery when the laptop stays plugged in).
 
 ```bash
-fish mode-conservation.fish   # sans sudo
+fish mode-conservation.fish   # no sudo
 ```
 
-Il installe :
-
-- `/usr/local/bin/battery-conservation` (root), qui n'accepte que `on`, `off`, `toggle` et `status` ;
-- une règle sudoers limitée à ce seul script, pour cliquer sans mot de passe (vérifiée avec `visudo` avant d'être installée) ;
-- un service qui remet le mode conservation à chaque démarrage ;
-- le lanceur « Basculer mode conservation », épinglé dans la barre, avec une notification à chaque changement.
-
-Le script passe par `charge_types` (`Long_Life` / `Standard`), l'interface actuelle du noyau, et garde l'ancien `conservation_mode` d'ideapad_acpi en secours.
-
-Branché avec le mode actif, le PC tourne sur le secteur sans charger : la batterie est maintenue, pas vidée. Pour vérifier : `upower -i (upower -e | grep BAT)` doit montrer un `energy-rate` proche de 0 W. Penser à le couper avant un déplacement pour avoir 100 %.
-
-Si tu préfères que ton dernier choix reste après un redémarrage : `sudo systemctl disable conservation-mode.service`.
-
-## Remarques
-
-- Fait pour CachyOS (pacman, `cachyos-keyring`) et KDE Plasma 6 (`kwriteconfig6`, `kscreen-doctor`). Sur une autre distro il faudra adapter l'installation de powertop.
-- Si le PC semble trop lent sur batterie, repasser en Équilibré depuis la zone de notification : intel-lpmd reprend la main.
+It installs a tiny root helper that only accepts `on/off/toggle/status`, a sudoers rule limited to that helper (checked with `visudo` first), a boot service, and a pinned launcher with a notification on each change. It uses the current `charge_types` kernel interface (`Long_Life`/`Standard`) and falls back to the older `conservation_mode`.
