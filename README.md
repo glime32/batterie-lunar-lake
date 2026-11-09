@@ -4,6 +4,8 @@
 
 <p align="center"><a href="README.fr.md">🇫🇷 Version française</a></p>
 
+> **No longer maintained.** On my laptop, these tweaks were replaced by a "Mode de charge" widget that isn't published yet.
+
 **Battery tweaks for Intel Lunar Lake laptops (Core Ultra 200V) on CachyOS + KDE Plasma**, a live `conso` power meter, and a one-click "conservation mode" button for Lenovo laptops.
 
 My Yoga 7 2-in-1 (Core Ultra 7 258V) lasted noticeably less than on Windows. Here's what I found and fixed.

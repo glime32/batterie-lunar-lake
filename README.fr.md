@@ -4,6 +4,8 @@
 
 <p align="center"><a href="README.md">🇬🇧 English version</a></p>
 
+> **Plus maintenu.** Chez moi, ces réglages sont remplacés par un widget « Mode de charge » pas encore publié.
+
 Script de réglages batterie pour un portable Intel Lunar Lake (Core Ultra 200V) sous CachyOS + KDE Plasma 6, et une commande `conso` pour voir la consommation en direct.
 
 Je l'ai écrit parce que mon Yoga 7 2-in-1 (Core Ultra 7 258V) tenait nettement moins longtemps que sous Windows.
